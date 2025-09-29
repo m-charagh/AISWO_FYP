@@ -15,29 +15,54 @@ function LandingPage() {
 
   const features = [
     {
-      icon: '📊',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+          <path d="M9 9h6v6H9z" fill="currentColor" opacity="0.3"/>
+          <path d="M9 12h6M12 9v6" stroke="currentColor" strokeWidth="1.5"/>
+          <circle cx="18" cy="6" r="2" fill="#34C759"/>
+        </svg>
+      ),
       title: 'Real-time Monitoring',
       description: 'Live tracking of bin fill levels and weight with instant alerts',
-      color: 'rgba(52, 199, 89, 0.1)'
+      color: '#34C759',
+      bgColor: 'rgba(52, 199, 89, 0.1)'
     },
     {
-      icon: '🌤️',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+          <path d="M19 15L20.09 18.26L23 19L20.09 19.74L19 23L17.91 19.74L15 19L17.91 18.26L19 15Z" fill="currentColor" opacity="0.6"/>
+          <path d="M5 10L6.09 13.26L9 14L6.09 14.74L5 18L3.91 14.74L1 14L3.91 13.26L5 10Z" fill="currentColor" opacity="0.4"/>
+        </svg>
+      ),
       title: 'Weather Integration',
       description: 'Smart alerts based on weather conditions and forecasts',
-      color: 'rgba(0, 122, 255, 0.1)'
+      color: '#007AFF',
+      bgColor: 'rgba(0, 122, 255, 0.1)'
     },
     {
-      icon: '🤖',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="4" width="18" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none"/>
+          <circle cx="8" cy="10" r="1" fill="currentColor"/>
+          <circle cx="12" cy="10" r="1" fill="currentColor"/>
+          <circle cx="16" cy="10" r="1" fill="currentColor"/>
+          <path d="M6 16h12" stroke="currentColor" strokeWidth="2"/>
+          <path d="M9 20h6" stroke="currentColor" strokeWidth="1.5"/>
+        </svg>
+      ),
       title: 'AI Assistant',
       description: 'Environmental chatbot for guidance and waste management tips',
-      color: 'rgba(255, 149, 0, 0.1)'
+      color: '#FF9500',
+      bgColor: 'rgba(255, 149, 0, 0.1)'
     }
   ];
 
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 25%, #34C759 50%, #52D765 75%, #D4F4DD 100%)',
+      background: 'linear-gradient(135deg, #34C759 0%, #52D765 50%, #D4F4DD 100%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -105,14 +130,11 @@ function LandingPage() {
           ♻️
         </div>
 
-        {/* Main Heading with Gradient Text */}
+        {/* Main Heading with Solid Color */}
         <h1 style={{
           fontSize: 'clamp(2.5rem, 5vw, 4rem)',
           fontWeight: '800',
-          background: 'linear-gradient(135deg, #ffffff 0%, #e8f8ec 50%, #34C759 100%)',
-          backgroundClip: 'text',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
+          color: 'var(--white)',
           marginBottom: 'var(--space-lg)',
           textShadow: '0 4px 20px rgba(0,0,0,0.3)',
           lineHeight: '1.1',
@@ -141,79 +163,119 @@ function LandingPage() {
           marginBottom: 'var(--space-2xl)',
           position: 'relative'
         }}>
-          {/* Feature Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          {/* Enhanced Feature Cards */}
+          <div className="feature-cards" style={{
+            display: 'flex',
+            justifyContent: 'center',
             gap: 'var(--space-lg)',
-            marginBottom: 'var(--space-lg)'
+            marginBottom: 'var(--space-lg)',
+            maxWidth: '1100px',
+            flexWrap: 'nowrap'
           }}>
             {features.map((feature, index) => (
               <div
                 key={index}
+                className="feature-card"
                 style={{
-                  background: `linear-gradient(145deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)`,
-                  backdropFilter: 'blur(20px)',
+                  background: 'var(--white)',
                   borderRadius: 'var(--radius-xl)',
-                  padding: 'var(--space-xl)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  transition: 'all 0.3s ease',
+                  padding: 'var(--space-2xl)',
+                  border: '1px solid rgba(52, 199, 89, 0.2)',
+                  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                   cursor: 'pointer',
-                  transform: currentFeature === index ? 'scale(1.05)' : 'scale(1)',
+                  transform: currentFeature === index ? 'scale(1.02) translateY(-8px)' : 'scale(1)',
                   boxShadow: currentFeature === index 
-                    ? '0 20px 40px rgba(0,0,0,0.3)' 
-                    : '0 8px 32px rgba(0,0,0,0.2)',
+                    ? '0 25px 50px rgba(52, 199, 89, 0.25)' 
+                    : '0 10px 30px rgba(0,0,0,0.1)',
                   position: 'relative',
-                  overflow: 'hidden'
+                  overflow: 'hidden',
+                  flex: '1',
+                  minWidth: '280px',
+                  maxWidth: '320px'
                 }}
                 onMouseEnter={(e) => {
-                  e.target.style.transform = 'scale(1.05) translateY(-8px)';
-                  e.target.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
+                  e.target.style.transform = 'scale(1.02) translateY(-12px)';
+                  e.target.style.boxShadow = '0 30px 60px rgba(52, 199, 89, 0.3)';
+                  e.target.style.borderColor = feature.color;
                 }}
                 onMouseLeave={(e) => {
-                  e.target.style.transform = currentFeature === index ? 'scale(1.05)' : 'scale(1)';
+                  e.target.style.transform = currentFeature === index ? 'scale(1.02) translateY(-8px)' : 'scale(1)';
                   e.target.style.boxShadow = currentFeature === index 
-                    ? '0 20px 40px rgba(0,0,0,0.3)' 
-                    : '0 8px 32px rgba(0,0,0,0.2)';
+                    ? '0 25px 50px rgba(52, 199, 89, 0.25)' 
+                    : '0 10px 30px rgba(0,0,0,0.1)';
+                  e.target.style.borderColor = 'rgba(52, 199, 89, 0.2)';
                 }}
               >
-                {/* Background Glow Effect */}
+                {/* Icon Container */}
                 <div style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: feature.color,
-                  borderRadius: 'var(--radius-xl)',
-                  opacity: currentFeature === index ? 0.3 : 0.1,
-                  transition: 'opacity 0.3s ease'
-                }} />
-                
-                <div style={{ position: 'relative', zIndex: 2 }}>
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: 'var(--radius-lg)',
+                  background: feature.bgColor,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 'var(--space-lg)',
+                  border: `2px solid ${feature.color}20`,
+                  transition: 'all 0.3s ease'
+                }}>
                   <div style={{ 
-                    fontSize: 'var(--font-size-3xl)', 
-                    marginBottom: 'var(--space-md)',
-                    filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))'
+                    color: feature.color,
+                    transition: 'all 0.3s ease'
                   }}>
                     {feature.icon}
                   </div>
+                </div>
+                
+                {/* Content */}
+                <div>
                   <h3 style={{ 
-                    color: 'var(--white)', 
-                    marginBottom: 'var(--space-sm)',
+                    color: 'var(--text-primary)', 
+                    marginBottom: 'var(--space-md)',
                     fontSize: 'var(--font-size-xl)',
-                    fontWeight: '600'
+                    fontWeight: '700',
+                    lineHeight: '1.3'
                   }}>
                     {feature.title}
                   </h3>
                   <p style={{ 
-                    color: 'rgba(255,255,255,0.9)', 
+                    color: 'var(--text-secondary)', 
                     fontSize: 'var(--font-size-base)',
-                    lineHeight: '1.5'
+                    lineHeight: '1.6',
+                    marginBottom: 'var(--space-lg)'
                   }}>
                     {feature.description}
                   </p>
+                  
+                  {/* Learn More Link */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 'var(--space-sm)',
+                    color: feature.color,
+                    fontSize: 'var(--font-size-sm)',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                    transition: 'all 0.3s ease'
+                  }}>
+                    Learn More
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
                 </div>
+                
+                {/* Decorative Element */}
+                <div style={{
+                  position: 'absolute',
+                  top: 'var(--space-lg)',
+                  right: 'var(--space-lg)',
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: `${feature.color}10`,
+                  opacity: 0.3
+                }} />
               </div>
             ))}
           </div>
@@ -284,9 +346,13 @@ function LandingPage() {
               e.target.style.background = 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)';
             }}
           >
-            <span style={{ fontSize: 'var(--font-size-lg)' }}>🚀</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
             Get Started
-            <span style={{ fontSize: 'var(--font-size-lg)', transition: 'transform 0.3s ease' }}>→</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transition: 'transform 0.3s ease' }}>
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </Link>
 
           <Link 
@@ -324,75 +390,100 @@ function LandingPage() {
               e.target.style.boxShadow = '0 12px 40px rgba(0,0,0,0.25)';
             }}
           >
-            <span style={{ fontSize: 'var(--font-size-lg)' }}>🌤️</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L13.09 8.26L20 9L13.09 9.74L12 16L10.91 9.74L4 9L10.91 8.26L12 2Z" fill="currentColor"/>
+              <path d="M19 15L20.09 18.26L23 19L20.09 19.74L19 23L17.91 19.74L15 19L17.91 18.26L19 15Z" fill="currentColor" opacity="0.6"/>
+            </svg>
             Weather Forecast
-            <span style={{ fontSize: 'var(--font-size-lg)', transition: 'transform 0.3s ease' }}>→</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transition: 'transform 0.3s ease' }}>
+              <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </Link>
         </div>
 
-        {/* Enhanced Stats Section */}
+        {/* Simple Stats Section */}
         <div style={{
           display: 'flex',
           justifyContent: 'center',
+          alignItems: 'center',
           gap: 'var(--space-2xl)',
           flexWrap: 'wrap',
-          marginTop: 'var(--space-2xl)'
+          marginTop: 'var(--space-2xl)',
+          maxWidth: '800px',
+          margin: 'var(--space-2xl) auto 0 auto'
         }}>
-          {[
-            { number: '100+', label: 'Smart Bins', icon: '🗑️' },
-            { number: '24/7', label: 'Monitoring', icon: '⏰' },
-            { number: '99%', label: 'Efficiency', icon: '📈' },
-            { number: 'AI', label: 'Powered', icon: '🤖' }
-          ].map((stat, index) => (
-            <div 
-              key={index}
-              style={{ 
-                textAlign: 'center',
-                background: 'rgba(255,255,255,0.1)',
-                backdropFilter: 'blur(20px)',
-                borderRadius: 'var(--radius-lg)',
-                padding: 'var(--space-lg)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                transition: 'all 0.3s ease',
-                cursor: 'pointer',
-                minWidth: '120px'
-              }}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-8px) scale(1.05)';
-                e.target.style.background = 'rgba(255,255,255,0.15)';
-                e.target.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0) scale(1)';
-                e.target.style.background = 'rgba(255,255,255,0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              <div style={{ 
-                fontSize: 'var(--font-size-2xl)', 
-                marginBottom: 'var(--space-sm)',
-                filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.3))'
-              }}>
-                {stat.icon}
-              </div>
-              <div style={{ 
-                fontSize: 'var(--font-size-3xl)', 
-                fontWeight: '800', 
-                color: 'var(--white)',
-                textShadow: '0 2px 10px rgba(0,0,0,0.3)',
-                marginBottom: 'var(--space-xs)'
-              }}>
-                {stat.number}
-              </div>
-              <div style={{ 
-                color: 'rgba(255,255,255,0.9)',
-                fontSize: 'var(--font-size-sm)',
-                fontWeight: '500'
-              }}>
-                {stat.label}
-              </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              fontSize: 'var(--font-size-3xl)', 
+              fontWeight: '800', 
+              color: 'var(--white)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              marginBottom: 'var(--space-xs)'
+            }}>
+              100+
             </div>
-          ))}
+            <div style={{ 
+              color: 'rgba(255,255,255,0.9)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: '500'
+            }}>
+              Smart Bins
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              fontSize: 'var(--font-size-3xl)', 
+              fontWeight: '800', 
+              color: 'var(--white)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              marginBottom: 'var(--space-xs)'
+            }}>
+              24/7
+            </div>
+            <div style={{ 
+              color: 'rgba(255,255,255,0.9)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: '500'
+            }}>
+              Monitoring
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              fontSize: 'var(--font-size-3xl)', 
+              fontWeight: '800', 
+              color: 'var(--white)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              marginBottom: 'var(--space-xs)'
+            }}>
+              99%
+            </div>
+            <div style={{ 
+              color: 'rgba(255,255,255,0.9)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: '500'
+            }}>
+              Efficiency
+            </div>
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ 
+              fontSize: 'var(--font-size-3xl)', 
+              fontWeight: '800', 
+              color: 'var(--white)',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+              marginBottom: 'var(--space-xs)'
+            }}>
+              AI
+            </div>
+            <div style={{ 
+              color: 'rgba(255,255,255,0.9)',
+              fontSize: 'var(--font-size-sm)',
+              fontWeight: '500'
+            }}>
+              Powered
+            </div>
+          </div>
         </div>
       </div>
 
@@ -466,14 +557,33 @@ function LandingPage() {
         }
         
         /* Enhanced hover effects */
-        .btn:hover span:last-child {
+        .btn:hover svg:last-child {
           transform: translateX(4px);
         }
         
         /* Responsive adjustments */
+        @media (max-width: 1024px) {
+          .feature-cards {
+            flex-wrap: wrap !important;
+            gap: var(--space-md) !important;
+          }
+          .feature-card {
+            min-width: 250px !important;
+            max-width: 300px !important;
+          }
+        }
+        
         @media (max-width: 768px) {
           .fade-in-up {
             max-width: 95%;
+          }
+          .feature-cards {
+            flex-direction: column !important;
+            align-items: center !important;
+          }
+          .feature-card {
+            width: 100% !important;
+            max-width: 350px !important;
           }
         }
       `}</style>
