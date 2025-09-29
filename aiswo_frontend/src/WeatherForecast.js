@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from './config';
 
@@ -7,36 +7,11 @@ function WeatherForecast() {
   const [forecast, setForecast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [location, setLocation] = useState(null);
 
   const API_KEY = API_CONFIG.OPENWEATHER_API_KEY;
   const BASE_URL = 'https://api.openweathermap.org/data/2.5';
 
-  useEffect(() => {
-    getCurrentLocation();
-  }, []);
-
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation({ lat: latitude, lon: longitude });
-          fetchWeatherData(latitude, longitude);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          // Default to a location if geolocation fails
-          fetchWeatherData(40.7128, -74.0060); // New York as fallback
-        }
-      );
-    } else {
-      console.error('Geolocation not supported');
-      fetchWeatherData(40.7128, -74.0060); // New York as fallback
-    }
-  };
-
-  const fetchWeatherData = async (lat, lon) => {
+  const fetchWeatherData = useCallback(async (lat, lon) => {
     try {
       setLoading(true);
       setError(null);
@@ -59,8 +34,30 @@ function WeatherForecast() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [API_KEY, BASE_URL]);
 
+  const getCurrentLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          fetchWeatherData(latitude, longitude);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Default to a location if geolocation fails
+          fetchWeatherData(40.7128, -74.0060); // New York as fallback
+        }
+      );
+    } else {
+      console.error('Geolocation not supported');
+      fetchWeatherData(40.7128, -74.0060); // New York as fallback
+    }
+  }, [fetchWeatherData]);
+
+  useEffect(() => {
+    getCurrentLocation();
+  }, [getCurrentLocation]);
 
   const getWeatherCondition = (weatherId) => {
     if (weatherId >= 200 && weatherId < 300) return { condition: 'Thunderstorm', emoji: '⛈️', color: '#8B5CF6' };
@@ -142,7 +139,7 @@ function WeatherForecast() {
   return (
     <div className="container" style={{ paddingTop: "var(--space-2xl)", paddingBottom: "var(--space-2xl)" }}>
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
+      <div className="fade-in-up" style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
         <h1 style={{ 
           fontSize: "var(--font-size-4xl)", 
           fontWeight: "700", 

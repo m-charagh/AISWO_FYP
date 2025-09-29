@@ -144,7 +144,7 @@ function AdminDashboard() {
   return (
     <div className="container" style={{ paddingTop: "var(--space-2xl)", paddingBottom: "var(--space-2xl)" }}>
       {/* Header */}
-      <div style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
+      <div className="fade-in-up" style={{ textAlign: "center", marginBottom: "var(--space-2xl)" }}>
         <h1 style={{ 
           fontSize: "var(--font-size-4xl)", 
           fontWeight: "700", 

@@ -1,240 +1,255 @@
-# 🚀 Smart Bin Monitoring System - Complete Setup Guide
+# AISWO Setup Guide
 
-## 🎉 **Your Enhanced Smart Bin System is Ready!**
+## 🚀 Quick Start
 
-I've successfully implemented all the features you requested with a beautiful Apple-inspired design. Here's what's been added:
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- Firebase project
+- Gmail account with app password
 
-## ✨ **New Features Implemented**
+### 1. Clone Repository
+```bash
+git clone https://github.com/yourusername/aiswo-fyp.git
+cd aiswo-fyp
+```
 
-### 1. **🌱 Environmental Activist Chatbot**
-- Powered by Gemini 2.5 Flash API
-- Promotes cleanliness and environmental awareness
-- Provides waste management tips and guidance
-- Accessible via the "🤖 Chat" button in navigation
-
-### 2. **🌤️ Weather Integration & Monitoring**
-- Real-time weather forecast page
-- Weather-based bin alerts (rain warnings)
-- Automatic email notifications for bad weather
-- OpenWeather API integration
-
-### 3. **👥 Operator Management System**
-- Assign operators to specific bins
-- Email notifications sent to assigned operators
-- Admin dashboard for managing operators
-- Operator-specific alerts for full bins
-
-### 4. **⚙️ Admin Dashboard**
-- Add, edit, and delete bins
-- Manage operators and their assignments
-- Real-time system monitoring
-- Complete CRUD operations
-
-### 5. **🏠 Beautiful Landing Page**
-- Apple-inspired design with gradients
-- Get Started button to access the app
-- Feature showcase and statistics
-- Smooth animations and hover effects
-
-### 6. **🎨 Enhanced UI/UX**
-- Modern Apple-inspired design system
-- Green gradient color scheme
-- Smooth hover effects and animations
-- Responsive design for all devices
-- Beautiful cards, buttons, and navigation
-
-## 🚀 **How to Run the Application**
-
-### **Step 1: Start the Backend Server**
+### 2. Backend Setup
 ```bash
 cd aiswo-backend
-node server.js
+npm install
 ```
-The backend will run on `http://localhost:5000`
 
-### **Step 2: Start the Frontend Server**
+### 3. Frontend Setup
 ```bash
+cd ../aiswo_frontend
+npm install
+```
+
+### 4. Firebase Configuration
+1. Create Firebase project at [Firebase Console](https://console.firebase.google.com/)
+2. Enable Realtime Database and Firestore
+3. Generate service account key
+4. Place `serviceAccountKey.json` in `aiswo-backend` folder
+
+### 5. Environment Variables
+Create `.env` file in `aiswo-backend`:
+```env
+OPENWEATHER_API_KEY=your_api_key
+GEMINI_API_KEY=your_api_key
+```
+
+### 6. Start Services
+```bash
+# Terminal 1 - Backend
+cd aiswo-backend
+npm start
+
+# Terminal 2 - Frontend
 cd aiswo_frontend
 npm start
 ```
-The frontend will run on `http://localhost:3000`
 
-### **Step 3: Open the Application**
-Open your browser and go to `http://localhost:3000`
+### 7. Access Application
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:5000
 
-## 🔑 **API Keys Setup (Optional but Recommended)**
+## 🔧 Detailed Configuration
 
-### **For Chatbot (Gemini AI):**
-1. Get your Gemini API key from Google AI Studio
-2. Create a `.env` file in the `aiswo_frontend` directory
-3. Add: `REACT_APP_GEMINI_API_KEY=your_actual_key_here`
+### Firebase Setup
 
-### **For Weather Forecast (OpenWeather):**
-1. Get your OpenWeather API key from openweathermap.org
-2. Add to the same `.env` file: `REACT_APP_OPENWEATHER_API_KEY=your_actual_key_here`
+#### Step 1: Create Project
+1. Go to [Firebase Console](https://console.firebase.google.com/)
+2. Click "Create a project"
+3. Enter project name: `aiswo-simple`
+4. Enable Google Analytics (optional)
+5. Click "Create project"
 
-## 📱 **Application Features**
+#### Step 2: Enable Realtime Database
+1. In Firebase Console, go to "Realtime Database"
+2. Click "Create Database"
+3. Choose "Start in test mode"
+4. Select location: **Asia-Southeast1**
+5. Copy the database URL
 
-### **Landing Page (`/`)**
-- Beautiful welcome screen
-- Feature overview
-- Get Started button
-- Weather forecast link
+#### Step 3: Enable Firestore
+1. Go to "Firestore Database"
+2. Click "Create database"
+3. Choose "Start in test mode"
+4. Select same location as Realtime Database
 
-### **Dashboard (`/dashboard`)**
-- Real-time bin monitoring
-- Statistics overview
-- Auto-refresh every 30 seconds
-- Manual refresh button
-- Beautiful card layout
+#### Step 4: Generate Service Account Key
+1. Go to Project Settings (gear icon)
+2. Go to "Service accounts" tab
+3. Click "Generate new private key"
+4. Download the JSON file
+5. Rename to `serviceAccountKey.json`
+6. Place in `aiswo-backend` folder
 
-### **Bin Details (`/bin/:id`)**
-- Individual bin monitoring
-- Historical data charts
-- Detailed analytics
-- Status indicators
+### Email Configuration
 
-### **Weather Forecast (`/weather`)**
-- Current weather conditions
-- 5-day forecast
-- Bin management alerts based on weather
-- Location-based data
+#### Gmail App Password Setup
+1. Enable 2-factor authentication on Gmail
+2. Go to Google Account settings
+3. Security → App passwords
+4. Generate app password for "Mail"
+5. Use this password in the configuration
 
-### **Admin Dashboard (`/admin`)**
-- Manage bins and operators
-- Add/edit/delete functionality
-- Real-time data updates
-- Operator assignment system
+#### Update Email Settings
+In `aiswo-backend/server.js`, update:
+```javascript
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: "your-email@gmail.com",
+    pass: "your-app-password"
+  }
+});
+```
 
-### **Chatbot (🤖 Chat button)**
-- Environmental activist AI
-- Waste management guidance
-- Cleanliness tips
-- Interactive chat interface
+### API Keys Setup
 
-## 🔧 **Backend Features**
+#### OpenWeather API
+1. Go to [OpenWeather](https://openweathermap.org/api)
+2. Sign up for free account
+3. Get API key
+4. Add to `.env` file
 
-### **Smart Alert System**
-- Bin full alerts sent to assigned operators
-- Weather-based alerts (rain warnings)
-- Email notifications via Nodemailer
-- Push notifications via Firebase
+#### Gemini API (Optional)
+1. Go to [Google AI Studio](https://makersuite.google.com/)
+2. Get API key
+3. Add to `.env` file
 
-### **Weather Monitoring**
-- Checks weather every 3 hours
-- Sends alerts for rain conditions
-- Location-based weather data
-- Operator-specific notifications
+## 🧪 Testing
 
-### **Operator Management**
-- CRUD operations for operators
-- Bin assignment system
-- Email notification routing
-- Real-time updates
+### Manual Testing Checklist
 
-## 🎨 **Design System**
+#### Backend Testing
+- [ ] Server starts without errors
+- [ ] Health endpoint responds
+- [ ] Bins endpoint returns data
+- [ ] Operators endpoint works
+- [ ] Email service configured
 
-### **Color Palette**
-- Primary Green: `#34C759`
-- Light Green: `#D4F4DD`
-- Accent Green: `#52D765`
-- White: `#FFFFFF`
-- Warning Orange: `#FF9500`
-- Danger Red: `#FF3B30`
+#### Frontend Testing
+- [ ] Application loads
+- [ ] Dashboard displays bins
+- [ ] Admin dashboard accessible
+- [ ] Can add/edit operators
+- [ ] Can add/edit bins
+- [ ] Weather forecast displays
 
-### **Components**
-- Modern cards with shadows
-- Gradient buttons with hover effects
-- Smooth animations and transitions
-- Responsive grid layouts
-- Beautiful typography
+#### Integration Testing
+- [ ] Firebase connection established
+- [ ] Data persists between restarts
+- [ ] Email alerts sent correctly
+- [ ] Weather alerts working
+- [ ] Weighted data generation
 
-## 📊 **Database Integration**
+### API Testing Commands
+```bash
+# Health check
+curl http://localhost:5000/health
 
-### **Firebase Realtime Database**
-- Real-time bin data
-- Historical tracking
-- Automatic synchronization
-- Cloud-based storage
+# Get all bins
+curl http://localhost:5000/bins
 
-### **Data Structure**
-- Bins with operator assignments
-- Weather monitoring data
-- Alert history
-- User management
+# Get all operators
+curl http://localhost:5000/operators
 
-## 🚨 **Alert System**
+# Get statistics
+curl http://localhost:5000/stats
+```
 
-### **Bin Alerts**
-- Full bin notifications (>80% capacity)
-- Warning notifications (60-80% capacity)
-- Operator-specific emails
-- Real-time status updates
+## 🚨 Troubleshooting
 
-### **Weather Alerts**
-- Rain condition warnings
-- Temperature-based alerts
-- Humidity monitoring
-- Location-specific notifications
+### Common Issues
 
-## 🔄 **Real-time Features**
+#### Server Won't Start
+- Check if port 5000 is available
+- Verify all dependencies installed
+- Check for syntax errors in server.js
 
-### **Auto-refresh**
-- Data updates every 30 seconds
-- Manual refresh capability
-- Live statistics in navigation
-- Real-time status indicators
+#### Firebase Connection Failed
+- Verify serviceAccountKey.json exists
+- Check Firebase project configuration
+- Ensure database rules allow read/write
 
-### **Live Monitoring**
-- Current bin status
-- Weather conditions
-- Operator assignments
-- System health checks
+#### Email Not Sending
+- Verify Gmail app password
+- Check email configuration
+- Test with simple email first
 
-## 📱 **Mobile Responsive**
+#### Frontend Not Loading
+- Check if backend is running
+- Verify API endpoints accessible
+- Check browser console for errors
 
-### **Design Features**
-- Mobile-first approach
-- Touch-friendly interfaces
-- Responsive navigation
-- Optimized for all screen sizes
+### Debug Mode
+Enable debug logging by adding to server.js:
+```javascript
+console.log("Debug mode enabled");
+```
 
-## 🎯 **Next Steps**
+## 📊 Monitoring
 
-1. **Set up API keys** for full functionality
-2. **Configure email settings** in the backend
-3. **Add your Firebase credentials** for real-time data
-4. **Customize the design** to match your brand
-5. **Deploy to production** when ready
+### Log Monitoring
+Monitor server logs for:
+- Firebase connection status
+- Email delivery confirmations
+- API request/response times
+- Error messages
 
-## 🆘 **Troubleshooting**
+### Performance Metrics
+- Response times
+- Memory usage
+- Database query performance
+- Email delivery rates
 
-### **If the app doesn't load:**
-1. Make sure both servers are running
-2. Check that ports 3000 and 5000 are available
-3. Verify all dependencies are installed
+## 🔒 Security Considerations
 
-### **If chatbot doesn't work:**
-1. Add your Gemini API key to the `.env` file
-2. Restart the frontend server
+### Development Security
+- Use test mode for Firebase
+- Don't commit API keys
+- Use environment variables
+- Enable CORS properly
 
-### **If weather doesn't load:**
-1. Add your OpenWeather API key to the `.env` file
-2. Check your internet connection
+### Production Security
+- Update Firebase security rules
+- Use HTTPS
+- Implement authentication
+- Monitor for suspicious activity
+- Regular security updates
 
-## 🎉 **Congratulations!**
+## 📈 Scaling Considerations
 
-Your Smart Bin Monitoring System is now fully functional with:
-- ✅ Beautiful Apple-inspired UI
-- ✅ Environmental chatbot
-- ✅ Weather monitoring
-- ✅ Operator management
-- ✅ Admin dashboard
-- ✅ Real-time alerts
-- ✅ Mobile responsive design
+### Performance Optimization
+- Implement caching
+- Optimize database queries
+- Use CDN for static assets
+- Monitor resource usage
 
-**The application is ready to use!** 🚀
+### High Availability
+- Set up load balancing
+- Implement failover mechanisms
+- Regular backups
+- Monitoring and alerting
+
+## 🆘 Support
+
+### Getting Help
+1. Check this documentation
+2. Review error logs
+3. Test individual components
+4. Create GitHub issue
+5. Contact development team
+
+### Useful Resources
+- [Firebase Documentation](https://firebase.google.com/docs)
+- [React Documentation](https://reactjs.org/docs)
+- [Node.js Documentation](https://nodejs.org/docs)
+- [Express.js Guide](https://expressjs.com/guide)
 
 ---
 
-**Note:** This is a comprehensive waste management solution with modern web technologies and beautiful design. All features are working and ready for production use!
+**Happy Coding!** 🚀

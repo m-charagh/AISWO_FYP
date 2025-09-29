@@ -1,0 +1,47 @@
+{
+  "name": "aiswo-smart-bin-monitoring",
+  "version": "1.0.0",
+  "description": "A comprehensive IoT-based smart bin monitoring system with real-time tracking, automated alerts, and intelligent data management",
+  "main": "index.js",
+  "scripts": {
+    "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "start:backend": "cd aiswo-backend && npm start",
+    "start:frontend": "cd aiswo_frontend && npm start",
+    "install:all": "npm install && cd aiswo-backend && npm install && cd ../aiswo_frontend && npm install",
+    "build": "cd aiswo_frontend && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd aiswo-backend && npm run dev",
+    "dev:frontend": "cd aiswo_frontend && npm start"
+  },
+  "keywords": [
+    "iot",
+    "smart-bins",
+    "waste-management",
+    "firebase",
+    "react",
+    "nodejs",
+    "arduino",
+    "sensors",
+    "monitoring",
+    "alerts",
+    "dashboard"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/aiswo-fyp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/aiswo-fyp/issues"
+  },
+  "homepage": "https://github.com/yourusername/aiswo-fyp#readme",
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}

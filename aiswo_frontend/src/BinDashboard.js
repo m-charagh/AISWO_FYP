@@ -158,9 +158,9 @@ function BinDashboard() {
   return (
     <div className="container" style={{ paddingTop: "var(--space-2xl)", paddingBottom: "var(--space-2xl)" }}>
       {/* Header */}
-      <div style={{ marginBottom: "var(--space-2xl)" }}>
+      <div className="fade-in-up" style={{ marginBottom: "var(--space-2xl)" }}>
         <Link 
-          to="/" 
+          to="/dashboard" 
           className="btn btn-secondary"
           style={{ 
             marginBottom: "var(--space-lg)",

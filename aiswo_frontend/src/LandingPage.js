@@ -36,7 +36,7 @@ function LandingPage() {
       }} />
 
       {/* Main Content */}
-      <div style={{
+      <div className="fade-in-up" style={{
         textAlign: 'center',
         zIndex: 10,
         maxWidth: '800px',
@@ -76,7 +76,7 @@ function LandingPage() {
         </p>
 
         {/* Features Grid */}
-        <div style={{
+        <div className="slide-in-right" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: 'var(--space-lg)',

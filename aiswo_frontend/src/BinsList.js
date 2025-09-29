@@ -113,7 +113,7 @@ function BinsList() {
       </div>
 
       {/* Stats Overview */}
-      <div style={{ 
+      <div className="fade-in-up" style={{ 
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", 
         gap: "var(--space-lg)",
@@ -140,7 +140,7 @@ function BinsList() {
       </div>
 
       {/* Bins Grid */}
-      <div style={{ 
+      <div className="slide-in-right" style={{ 
         display: "grid", 
         gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))", 
         gap: "var(--space-lg)"
