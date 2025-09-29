@@ -46,11 +46,11 @@ function Footer() {
             <div className="contact-info">
               <div className="contact-item">
                 <span className="contact-icon">📧</span>
-                <span>support@smartbins.com</span>
+                <span>hassanasim337@gmail.com</span>
               </div>
               <div className="contact-item">
                 <span className="contact-icon">📱</span>
-                <span>+1 (555) 123-4567</span>
+                <span>+92 330-5241433</span>
               </div>
               <div className="contact-item">
                 <span className="contact-icon">📍</span>
