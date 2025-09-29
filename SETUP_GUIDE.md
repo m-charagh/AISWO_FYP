@@ -7,6 +7,8 @@
 - npm or yarn
 - Firebase project
 - Gmail account with app password
+- OpenWeather API key (free tier available)
+- Gemini AI API key (free tier available)
 
 ### 1. Clone Repository
 ```bash
@@ -35,9 +37,39 @@ npm install
 ### 5. Environment Variables
 Create `.env` file in `aiswo-backend`:
 ```env
-OPENWEATHER_API_KEY=your_api_key
-GEMINI_API_KEY=your_api_key
+# OpenWeather API Key for weather data and alerts
+OPENWEATHER_API_KEY=your_openweather_api_key_here
+
+# Gemini AI API Key for chatbot functionality
+GEMINI_API_KEY=your_gemini_api_key_here
 ```
+
+#### Getting API Keys:
+
+**OpenWeather API Key:**
+1. Go to [OpenWeatherMap](https://openweathermap.org/api)
+2. Sign up for a free account
+3. Navigate to "API keys" section
+4. Copy your API key
+5. Add it to the `.env` file
+
+**Gemini AI API Key:**
+1. Go to [Google AI Studio](https://makersuite.google.com/)
+2. Sign in with your Google account
+3. Create a new API key
+4. Copy the generated key
+5. Add it to the `.env` file
+
+**Important Notes:**
+- Never commit the `.env` file to version control
+- The `.env` file is already included in `.gitignore`
+- Keep your API keys secure and don't share them publicly
+- Free tier limits apply to both services
+
+**What happens without API keys:**
+- **OpenWeather API**: Weather alerts and forecasts will be disabled
+- **Gemini API**: Chatbot functionality will be unavailable
+- **Core functionality**: Bin monitoring and email alerts will still work
 
 ### 6. Start Services
 ```bash
