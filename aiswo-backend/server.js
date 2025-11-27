@@ -3,87 +3,79 @@ const cors = require("cors");
 const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 const axios = require("axios");
+const bcrypt = require("bcrypt");
+const fs = require("fs");
 require('dotenv').config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Firebase configuration - using environment variables or default setup
+// Firebase configuration - supports both local and Vercel deployment
 let db = null;
 let firestore = null;
 
 try {
-  const serviceAccount = require("./serviceAccountKey.json");
+  let serviceAccount;
+  let databaseURL;
   
-  // Auto-detect database URL from project ID
-  const projectId = serviceAccount.project_id;
-  const databaseURL = process.env.FIREBASE_DATABASE_URL || 
-                     `https://${projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`;
+  // Check if local serviceAccountKey.json exists (development)
+  if (fs.existsSync('./serviceAccountKey.json')) {
+    serviceAccount = require("./serviceAccountKey.json");
+    const projectId = serviceAccount.project_id;
+    databaseURL = process.env.FIREBASE_DATABASE_URL || 
+                  `https://${projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`;
+    console.log('📝 Using local serviceAccountKey.json');
+  } 
+  // Use environment variables (production/Vercel)
+  else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_PRIVATE_KEY) {
+    serviceAccount = {
+      type: "service_account",
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_CLIENT_ID,
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+      client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.FIREBASE_CLIENT_EMAIL}`,
+      universe_domain: "googleapis.com"
+    };
+    databaseURL = process.env.FIREBASE_DATABASE_URL || 
+                  `https://${process.env.FIREBASE_PROJECT_ID}-default-rtdb.asia-southeast1.firebasedatabase.app`;
+    console.log('🌐 Using environment variables for Firebase (Vercel mode)');
+  } else {
+    throw new Error('No Firebase credentials found');
+  }
   
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    databaseURL: databaseURL
-  });
+  // Check if Firebase app is already initialized
+  if (admin.apps.length === 0) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: databaseURL
+    });
+  }
   
   db = admin.database();
   firestore = admin.firestore();
+  
   console.log("✅ Firebase connected successfully");
-  console.log(`📊 Project: ${projectId}`);
+  console.log(`📊 Project: ${serviceAccount.project_id}`);
   console.log(`🔗 Database: ${databaseURL}`);
 } catch (error) {
   console.log("⚠️ Firebase not configured - running in demo mode");
-  console.log("To enable Firebase, add serviceAccountKey.json file");
+  console.log("To enable Firebase, add serviceAccountKey.json file or set environment variables");
   console.log("Error:", error.message);
 }
 
-// 🔹 Dummy bins (bin2, bin3)
-const dummyBins = {
-  bin2: {
-    weightKg: 9.2,
-    fillPct: 92,
-    status: "NEEDS_EMPTYING",
-    updatedAt: new Date().toISOString(),
-    name: "Main Street Bin",
-    location: "Main Street, Downtown",
-    capacity: 10,
-    operatorId: "op1",
-    operatorEmail: "m.charagh02@gmail.com",
-    history: [
-      { ts: "2025-10-08 11:00", weightKg: 8.5, fillPct: 85 },
-      { ts: "2025-10-08 11:30", weightKg: 8.8, fillPct: 88 },
-      { ts: "2025-10-08 12:00", weightKg: 9.2, fillPct: 92 }
-    ]
-  },
-  bin3: {
-    weightKg: 5.1,
-    fillPct: 51,
-    status: "OK",
-    updatedAt: new Date().toISOString(),
-    name: "Park Avenue Bin",
-    location: "Park Avenue, Central Park",
-    capacity: 10,
-    operatorId: "op2",
-    operatorEmail: "m.charagh02@gmail.com",
-    history: [
-      { ts: "2025-10-08 10:00", weightKg: 4.8, fillPct: 48 },
-      { ts: "2025-10-08 10:30", weightKg: 4.9, fillPct: 49 },
-      { ts: "2025-10-08 11:00", weightKg: 5.1, fillPct: 51 }
-    ]
-  }
-};
+
 
 // 🔹 Weighted data generation for multiple bins using real hardware data
-const WEIGHT_FACTORS = {
-  bin2: 0.3,
-  bin3: 0.5,
-  bin4: 0.7,
-  bin5: 0.4,
-  bin6: 0.6
-};
+
 
 function generateWeightedBinData(realBinData, binId) {
-  const weightFactor = WEIGHT_FACTORS[binId] || 0.5;
+  const weightFactor = 0.5;
   
   if (!realBinData || !realBinData.weightKg) {
     // Fallback data if real data is not available
@@ -117,23 +109,6 @@ function generateWeightedBinData(realBinData, binId) {
 }
 
 // 🔹 Dummy operators (will be moved to Firestore)
-const dummyOperators = {
-  op1: {
-    name: "John Smith",
-    email: "m.charagh02@gmail.com",
-    phone: "+1-555-0123",
-    assignedBins: ["bin2"],
-    createdAt: new Date().toISOString()
-  },
-  op2: {
-    name: "Sarah Johnson",
-    email: "m.charagh02@gmail.com",
-    phone: "+1-555-0124",
-    assignedBins: ["bin3"],
-    createdAt: new Date().toISOString()
-  }
-};
-
 const operatorTaskTemplates = [
   { id: "inspect", label: "Inspect assigned bins within your zone" },
   { id: "report", label: "Report any hardware or location issues" },
@@ -285,22 +260,35 @@ async function checkWeatherAndSendAlerts() {
     if (weatherId >= 500 && weatherId < 600) {
       console.log("🌧️ Rain detected! Sending weather alerts...");
       
-      // Send alerts to all operators
-      for (const [operatorId, operator] of Object.entries(dummyOperators)) {
-        const weatherAlertEmail = {
-          from: 'm.charaghyousafkhan@gmail.com',
-          to: operator.email,
-          subject: `🌧️ Weather Alert: Rain Expected - Bin Monitoring Required`,
-          text: `Dear ${operator.name},\n\nRain is expected in your area. Please check your assigned bins for potential overflow issues.\n\nWeather Details:\n- Condition: ${weather.weather[0].description}\n- Temperature: ${weather.main.temp}°C\n- Humidity: ${weather.main.humidity}%\n\nPlease ensure bins are properly secured and monitor for overflow.\n\nBest regards,\nSmart Bin Monitoring System`
-        };
+      // Get operators from Firestore
+      if (!firestore) {
+        console.log("⚠️ Firestore not available, cannot send weather alerts");
+        return;
+      }
+      
+      try {
+        const operatorsSnapshot = await firestore.collection('operators').get();
         
-        transporter.sendMail(weatherAlertEmail, (error, info) => {
-          if (error) {
-            console.error('Error sending weather alert email:', error);
-          } else {
-            console.log(`Weather alert email sent to ${operator.name}:`, info.response);
-          }
+        // Send alerts to all operators
+        operatorsSnapshot.forEach(doc => {
+          const operator = doc.data();
+          const weatherAlertEmail = {
+            from: 'm.charaghyousafkhan@gmail.com',
+            to: operator.email,
+            subject: `🌧️ Weather Alert: Rain Expected - Bin Monitoring Required`,
+            text: `Dear ${operator.name},\n\nRain is expected in your area. Please check your assigned bins for potential overflow issues.\n\nWeather Details:\n- Condition: ${weather.weather[0].description}\n- Temperature: ${weather.main.temp}°C\n- Humidity: ${weather.main.humidity}%\n\nPlease ensure bins are properly secured and monitor for overflow.\n\nBest regards,\nSmart Bin Monitoring System`
+          };
+          
+          transporter.sendMail(weatherAlertEmail, (error, info) => {
+            if (error) {
+              console.error('Error sending weather alert email:', error);
+            } else {
+              console.log(`📧 Weather alert email sent to ${operator.name}:`, info.response);
+            }
+          });
         });
+      } catch (firestoreError) {
+        console.error('Error fetching operators from Firestore:', firestoreError);
       }
     }
   } catch (error) {
@@ -325,10 +313,9 @@ app.get("/bins", async (req, res) => {
   try {
     console.log("🔍 Fetching bins...");
     let bins = {};
-    let realBinData = null;
     let operators = {};
     
-    // Get operators data first
+    // Get operators data from Firestore
     if (firestore) {
       try {
         const operatorsSnapshot = await firestore.collection('operators').get();
@@ -337,90 +324,182 @@ app.get("/bins", async (req, res) => {
         });
         console.log("✅ Operators loaded from Firestore");
       } catch (firestoreError) {
-        console.log("⚠️ Firestore error, using dummy operators");
-        operators = dummyOperators;
+        console.log("⚠️ Firestore error loading operators:", firestoreError.message);
+        operators = {};
       }
     } else {
-      console.log("⚠️ Firestore not available, using dummy operators");
-      operators = dummyOperators;
+      console.log("⚠️ Firestore not available");
+      operators = {};
     }
     
-    if (db) {
-      try {
-        // Get real data from bin1 (your hardware)
-        const snapshot = await db.ref("bins/bin1").once("value");
-        realBinData = snapshot.val() || {};
-        bins.bin1 = realBinData;
-        console.log(`✅ Retrieved bin1 data: ${realBinData.weightKg || 0}kg`);
-      } catch (error) {
-        console.log(`⚠️ Error fetching bin1 data: ${error.message}`);
-        // Use dummy data for bin1 if Firebase fails
-        realBinData = { weightKg: 5.2, fillPct: 52, status: "OK", updatedAt: new Date().toISOString() };
-        bins.bin1 = realBinData;
-      }
-    } else {
-      console.log("⚠️ No Firebase DB connection, using dummy bin1 data");
-      realBinData = { weightKg: 5.2, fillPct: 52, status: "OK", updatedAt: new Date().toISOString() };
-      bins.bin1 = realBinData;
-    }
-    
-    // Get bins from Firestore
+    // Step 1: Get metadata from Firestore bins collection
+    let firestoreBins = {};
     if (firestore) {
       try {
         const binsSnapshot = await firestore.collection('bins').get();
         binsSnapshot.forEach(doc => {
-          const binData = doc.data();
-          const binId = doc.id;
-          
-          // Skip bin1 as it's handled by Realtime Database
-          if (binId !== 'bin1') {
-            // Generate weighted data based on real hardware data
-            const weightedData = generateWeightedBinData(realBinData, binId);
-            bins[binId] = {
-              ...binData,
-              ...weightedData,
-              lastFetched: new Date().toISOString()
-            };
-          }
+          firestoreBins[doc.id] = doc.data();
         });
-      } catch (firestoreError) {
-        console.log("Firestore not available, using fallback data");
-        // Fallback to dummy data if Firestore is not available
-        Object.keys(dummyBins).forEach(binId => {
-          const weightedData = generateWeightedBinData(realBinData, binId);
-          bins[binId] = {
-            ...dummyBins[binId],
-            ...weightedData,
-            lastFetched: new Date().toISOString()
-          };
-        });
+        console.log(`✅ Retrieved ${Object.keys(firestoreBins).length} bins metadata from Firestore`);
+      } catch (error) {
+        console.log(`⚠️ Error fetching bins from Firestore: ${error.message}`);
       }
-    } else {
-      // Fallback when Firebase is not available
-      Object.keys(dummyBins).forEach(binId => {
-        const weightedData = generateWeightedBinData(realBinData, binId);
-        bins[binId] = {
-          ...dummyBins[binId],
-          ...weightedData,
-          lastFetched: new Date().toISOString()
-        };
-      });
     }
-
-    // Always include dummy bins for demonstration
-    Object.keys(dummyBins).forEach(binId => {
-      if (!bins[binId]) {
-        bins[binId] = {
-          ...dummyBins[binId],
-          lastFetched: new Date().toISOString()
-        };
+    
+    // Step 2: Get technical data from Realtime Database
+    let realtimeBins = {};
+    if (db) {
+      try {
+        const snapshot = await db.ref("bins").once("value");
+        realtimeBins = snapshot.val() || {};
+        console.log(`✅ Retrieved ${Object.keys(realtimeBins).length} bins technical data from Realtime Database`);
+      } catch (error) {
+        console.log(`⚠️ Error fetching bins from Realtime Database: ${error.message}`);
       }
+    }
+    
+    // Step 3: Auto-sync - Create/Update Firestore entries for new/changed Realtime bins
+    if (firestore && db) {
+      for (const binId of Object.keys(realtimeBins)) {
+        const rtData = realtimeBins[binId];
+        
+        if (!firestoreBins[binId]) {
+          // New bin - create Firestore entry
+          console.log(`🔄 Auto-syncing new bin: ${binId}`);
+          
+          const defaultMetadata = {
+            binId: binId,
+            name: rtData.name || binId.toUpperCase(),
+            location: rtData.location || 'Unknown Location',
+            capacity: rtData.capacity || 3,
+            assignedTo: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
+          
+          try {
+            await firestore.collection('bins').doc(binId).set(defaultMetadata);
+            firestoreBins[binId] = {
+              ...defaultMetadata,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
+            console.log(`✅ Created Firestore entry for ${binId}`);
+          } catch (error) {
+            console.log(`⚠️ Failed to create Firestore entry for ${binId}: ${error.message}`);
+          }
+        } else if (rtData.name || rtData.location || rtData.capacity) {
+          // Existing bin with metadata in Realtime DB - sync to Firestore (backward compatibility)
+          const updates = {};
+          if (rtData.name && rtData.name !== firestoreBins[binId].name) {
+            updates.name = rtData.name;
+          }
+          if (rtData.location && rtData.location !== firestoreBins[binId].location) {
+            updates.location = rtData.location;
+          }
+          if (rtData.capacity && rtData.capacity !== firestoreBins[binId].capacity) {
+            updates.capacity = rtData.capacity;
+          }
+          
+          if (Object.keys(updates).length > 0) {
+            updates.updatedAt = new Date().toISOString();
+            try {
+              await firestore.collection('bins').doc(binId).update(updates);
+              Object.assign(firestoreBins[binId], updates, { updatedAt: new Date().toISOString() });
+              console.log(`🔄 Synced metadata from Realtime DB to Firestore for ${binId}`);
+            } catch (error) {
+              console.log(`⚠️ Failed to sync metadata for ${binId}: ${error.message}`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Step 4: Merge Firestore metadata with Realtime technical data
+    // Get all unique bin IDs from both sources
+    const allBinIds = new Set([
+      ...Object.keys(firestoreBins),
+      ...Object.keys(realtimeBins)
+    ]);
+    
+    allBinIds.forEach(binId => {
+      const metadata = firestoreBins[binId] || {};
+      const technicalData = realtimeBins[binId] || {};
+      
+      bins[binId] = {
+        // Metadata from Firestore (fallback to Realtime DB for backward compatibility)
+        binId: metadata.binId || binId,
+        name: metadata.name || technicalData.name || binId.toUpperCase(),
+        location: metadata.location || technicalData.location || 'Unknown',
+        capacity: metadata.capacity || technicalData.capacity || 3,
+        assignedTo: metadata.assignedTo || null,
+        
+        // Technical data from Realtime DB (sensor readings)
+        weightKg: technicalData.weightKg || 0,
+        fillPct: technicalData.fillPct || 0,
+        status: technicalData.status || 'Normal',
+        isBlocked: technicalData.isBlocked || false,
+        updatedAt: technicalData.updatedAt || new Date().toISOString(),
+        
+        lastFetched: new Date().toISOString()
+      };
     });
 
-    // Add last updated timestamp to each bin
+    
+    // If no bins found, provide dummy data for bin1
+    if (Object.keys(bins).length === 0) {
+      console.log("⚠️ No bins found, using dummy bin1 data");
+      bins.bin1 = { 
+        binId: 'bin1',
+        name: 'Bin 1',
+        location: 'Unknown',
+        capacity: 3,
+        assignedTo: null,
+        weightKg: 5.2, 
+        fillPct: 52,
+        status: 'Normal',
+        isBlocked: false,
+        updatedAt: new Date().toISOString() 
+      };
+    }
+    
+    // Cache bins for chatbot
+    cachedBins = bins;
+
+    // Add assigned operator info from operators collection (not assignedTo from bins)
     Object.keys(bins).forEach(id => {
       if (bins[id]) {
-        bins[id].lastFetched = new Date().toISOString();
+        // Find which operator is assigned to this bin
+        bins[id].assignedOperator = null;
+        
+        // Check if assignedTo field exists in bin metadata
+        if (bins[id].assignedTo) {
+          const opId = bins[id].assignedTo;
+          if (operators[opId]) {
+            bins[id].assignedOperator = {
+              id: opId,
+              name: operators[opId].name,
+              email: operators[opId].email
+            };
+          }
+        } else {
+          // Fallback: Check operators' assignedBins array
+          Object.entries(operators).forEach(([opId, operator]) => {
+            if (operator.assignedBins && operator.assignedBins.includes(id)) {
+              bins[id].assignedOperator = {
+                id: opId,
+                name: operator.name,
+                email: operator.email
+              };
+              // Update Firestore with this assignment
+              if (firestore) {
+                firestore.collection('bins').doc(id).update({ assignedTo: opId }).catch(err => {
+                  console.log(`⚠️ Could not update assignedTo for ${id}: ${err.message}`);
+                });
+              }
+            }
+          });
+        }
       }
     });
 
@@ -433,13 +512,13 @@ app.get("/bins", async (req, res) => {
           console.log(`⚠️ ALERT: ${id} is almost full (${bin.fillPct}%)`);
           
           // Send email to assigned operator
-          if (bin.operatorId && operators[bin.operatorId]) {
-            const operator = operators[bin.operatorId];
+          if (bin.assignedOperator) {
+            const operator = bin.assignedOperator;
             const operatorAlertEmail = {
               from: 'm.charaghyousafkhan@gmail.com',
               to: operator.email,
-              subject: `🚨 URGENT: Bin ${id} is Full - Immediate Action Required`,
-              text: `Dear ${operator.name},\n\nBin ${id} (${bin.name || id}) is at ${bin.fillPct}% capacity and needs immediate attention.\n\nBin Details:\n- Location: ${bin.location || 'Not specified'}\n- Current Weight: ${bin.weightKg} kg\n- Fill Level: ${bin.fillPct}%\n- Status: ${bin.status}\n\nPlease empty this bin as soon as possible to prevent overflow.\n\nBest regards,\nSmart Bin Monitoring System`
+              subject: `🚨 URGENT: Bin ${id.toUpperCase()} is Full - Immediate Action Required`,
+              text: `Dear ${operator.name},\n\nBin ${id.toUpperCase()} (${bin.name || id}) is at ${bin.fillPct.toFixed(1)}% capacity and needs immediate attention.\n\nBin Details:\n- Location: ${bin.location || 'Not specified'}\n- Current Weight: ${bin.weightKg.toFixed(2)} kg\n- Fill Level: ${bin.fillPct.toFixed(1)}%\n- Status: ${bin.status}\n\nPlease empty this bin as soon as possible to prevent overflow.\n\nBest regards,\nSmart Bin Monitoring System`
             };
             
             transporter.sendMail(operatorAlertEmail, (error, info) => {
@@ -449,10 +528,10 @@ app.get("/bins", async (req, res) => {
                 console.log(`📧 Operator alert email sent to ${operator.name} (${operator.email}):`, info.response);
               }
             });
+          } else {
+            // Send to admin if no operator assigned
+            sendBinAlertEmail(id, bin.fillPct);
           }
-          
-          // Send general alert email to admin
-          sendBinAlertEmail(id, bin.fillPct);
           
           if (testFcmToken && testFcmToken !== "YOUR_FCM_DEVICE_TOKEN_HERE") {
             sendBinAlertPush(id, bin.fillPct, testFcmToken);
@@ -484,62 +563,71 @@ app.get("/bins", async (req, res) => {
 app.get("/bins/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    if (id === "bin1") {
-      // bin1 is always from Realtime Database (real hardware)
-      if (db) {
-        const snapshot = await db.ref("bins/bin1").once("value");
-        return res.json(snapshot.val() || {});
+    // Step 1: Get metadata from Firestore
+    let metadata = null;
+    if (firestore) {
+      const binDoc = await firestore.collection('bins').doc(id).get();
+      if (binDoc.exists) {
+        metadata = binDoc.data();
       } else {
-        return res.status(404).json({ error: "Real-time database not available" });
+        return res.status(404).json({ error: "Bin not found in Firestore" });
       }
     } else {
-      // Other bins use weighted data from Firestore
-      if (firestore) {
-        const binDoc = await firestore.collection('bins').doc(id).get();
-        if (binDoc.exists) {
-          const binData = binDoc.data();
-          
-          // Get real data to generate weighted data
-          let realBinData = null;
-          if (db) {
-            const snapshot = await db.ref("bins/bin1").once("value");
-            realBinData = snapshot.val() || {};
-          }
-          
-          // Generate weighted data
-          const weightedData = generateWeightedBinData(realBinData, id);
-          const finalBinData = {
-            ...binData,
-            ...weightedData,
-            lastFetched: new Date().toISOString()
-          };
-          
-          return res.json(finalBinData);
-        } else {
-          return res.status(404).json({ error: "Bin not found" });
-        }
-      } else {
-        // Fallback to dummy data
-        if (dummyBins[id]) {
-          let realBinData = null;
-          if (db) {
-            const snapshot = await db.ref("bins/bin1").once("value");
-            realBinData = snapshot.val() || {};
-          }
-          
-          const weightedData = generateWeightedBinData(realBinData, id);
-          const finalBinData = {
-            ...dummyBins[id],
-            ...weightedData,
-            lastFetched: new Date().toISOString()
-          };
-          
-          return res.json(finalBinData);
-        } else {
-          return res.status(404).json({ error: "Bin not found" });
-        }
+      return res.status(404).json({ error: "Firestore not available" });
+    }
+    
+    // Step 2: Get technical data from Realtime Database
+    let technicalData = {};
+    if (db) {
+      const snapshot = await db.ref(`bins/${id}`).once("value");
+      technicalData = snapshot.val() || {};
+    }
+    
+    // Step 3: Get operators for assignedOperator info
+    let operators = {};
+    if (firestore) {
+      try {
+        const operatorsSnapshot = await firestore.collection('operators').get();
+        operatorsSnapshot.forEach(doc => {
+          operators[doc.id] = doc.data();
+        });
+      } catch (error) {
+        console.log('⚠️ Error fetching operators:', error.message);
       }
     }
+    
+    // Step 4: Merge metadata with technical data (backward compatible with old ESP32)
+    const binData = {
+      // Metadata from Firestore (fallback to Realtime DB for backward compatibility)
+      binId: metadata.binId || id,
+      name: metadata.name || technicalData.name || id.toUpperCase(),
+      location: metadata.location || technicalData.location || 'Unknown',
+      capacity: metadata.capacity || technicalData.capacity || 3,
+      assignedTo: metadata.assignedTo,
+      
+      // Technical data from Realtime DB
+      weightKg: technicalData.weightKg || 0,
+      fillPct: technicalData.fillPct || 0,
+      status: technicalData.status || 'Normal',
+      isBlocked: technicalData.isBlocked || false,
+      updatedAt: technicalData.updatedAt || new Date().toISOString(),
+      
+      lastFetched: new Date().toISOString()
+    };
+    
+    // Add assignedOperator info
+    if (binData.assignedTo && operators[binData.assignedTo]) {
+      binData.assignedOperator = {
+        id: binData.assignedTo,
+        name: operators[binData.assignedTo].name,
+        email: operators[binData.assignedTo].email
+      };
+    } else {
+      binData.assignedOperator = null;
+    }
+    
+    return res.json(binData);
+    
   } catch (err) {
     console.error(`Error fetching bin ${id}:`, err);
     res.status(500).json({ error: "Failed to fetch bin" });
@@ -550,13 +638,11 @@ app.get("/bins/:id", async (req, res) => {
 app.get("/bins/:id/history", async (req, res) => {
   const id = req.params.id;
   try {
-    if (id === "bin1") {
-      const snapshot = await db.ref("bins/bin1/history").once("value");
-      return res.json(snapshot.val() || []); // safe return
-    } else if (dummyBins[id]) {
-      return res.json(dummyBins[id].history);
+    if (db) {
+      const snapshot = await db.ref(`bins/${id}/history`).once("value");
+      return res.json(snapshot.val() || {});
     } else {
-      return res.status(404).json({ error: "History not found" });
+      return res.status(404).json({ error: "Realtime Database not available" });
     }
   } catch (err) {
     console.error(`Error fetching history for ${id}:`, err);
@@ -595,23 +681,11 @@ app.get("/stats", async (req, res) => {
         });
       } catch (firestoreError) {
         console.log("Firestore not available for stats, using fallback");
-        Object.keys(dummyBins).forEach(binId => {
-          const weightedData = generateWeightedBinData(realBinData, binId);
-          allBins[binId] = {
-            ...dummyBins[binId],
-            ...weightedData
-          };
-        });
+        // No dummy bins to fallback to
       }
     } else {
       // Fallback when Firebase is not available
-      Object.keys(dummyBins).forEach(binId => {
-        const weightedData = generateWeightedBinData(realBinData, binId);
-        allBins[binId] = {
-          ...dummyBins[binId],
-          ...weightedData
-        };
-      });
+      // No dummy bins to fallback to
     }
 
     const stats = {
@@ -636,16 +710,16 @@ app.get("/stats", async (req, res) => {
 // Get all operators
 app.get("/operators", async (req, res) => {
   try {
-    if (firestore) {
-      const operatorsSnapshot = await firestore.collection('operators').get();
-      const operators = {};
-      operatorsSnapshot.forEach(doc => {
-        operators[doc.id] = doc.data();
-      });
-      res.json(operators);
-    } else {
-      res.json(dummyOperators);
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+    
+    const operatorsSnapshot = await firestore.collection('operators').get();
+    const operators = {};
+    operatorsSnapshot.forEach(doc => {
+      operators[doc.id] = doc.data();
+    });
+    res.json(operators);
   } catch (error) {
     console.error("Error fetching operators:", error);
     res.status(500).json({ error: "Failed to fetch operators" });
@@ -656,19 +730,15 @@ app.get("/operators", async (req, res) => {
 app.get("/operators/:id", async (req, res) => {
   const id = req.params.id;
   try {
-    if (firestore) {
-      const operatorDoc = await firestore.collection('operators').doc(id).get();
-      if (operatorDoc.exists) {
-        res.json(operatorDoc.data());
-      } else {
-        res.status(404).json({ error: "Operator not found" });
-      }
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
+    }
+    
+    const operatorDoc = await firestore.collection('operators').doc(id).get();
+    if (operatorDoc.exists) {
+      res.json(operatorDoc.data());
     } else {
-      if (dummyOperators[id]) {
-        res.json(dummyOperators[id]);
-      } else {
-        res.status(404).json({ error: "Operator not found" });
-      }
+      res.status(404).json({ error: "Operator not found" });
     }
   } catch (error) {
     console.error(`Error fetching operator ${id}:`, error);
@@ -678,28 +748,34 @@ app.get("/operators/:id", async (req, res) => {
 
 // Create new operator
 app.post("/operators", async (req, res) => {
-  const { id, name, email, phone, assignedBins } = req.body;
+  const { id, name, email, phone, assignedBins, password } = req.body;
   
-  if (!id || !name || !email) {
-    return res.status(400).json({ error: "Missing required fields" });
+  if (!id || !name || !email || !password) {
+    return res.status(400).json({ error: "Missing required fields (id, name, email, password)" });
   }
   
-  const operatorData = {
-    name,
-    email,
-    phone: phone || '',
-    assignedBins: assignedBins || [],
-    createdAt: new Date().toISOString()
-  };
+  if (!firestore) {
+    return res.status(503).json({ error: "Firestore not initialized" });
+  }
   
   try {
-    if (firestore) {
-      await firestore.collection('operators').doc(id).set(operatorData);
-      res.json({ message: "Operator created successfully", operator: operatorData });
-    } else {
-      dummyOperators[id] = operatorData;
-      res.json({ message: "Operator created successfully", operator: operatorData });
-    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const operatorData = {
+      name,
+      email,
+      phone: phone || "",
+      assignedBins: assignedBins || [],
+      password: hashedPassword,
+      role: 'operator',
+      createdAt: new Date().toISOString()
+    };
+    
+    await firestore.collection('operators').doc(id).set(operatorData);
+    
+    // Remove password from response
+    const { password: _, ...responseData } = operatorData;
+    res.status(201).json({ message: "Operator created successfully", operator: { id, ...responseData } });
   } catch (error) {
     console.error("Error creating operator:", error);
     res.status(500).json({ error: "Failed to create operator" });
@@ -709,41 +785,34 @@ app.post("/operators", async (req, res) => {
 // Update operator
 app.put("/operators/:id", async (req, res) => {
   const id = req.params.id;
-  const { name, email, phone, assignedBins } = req.body;
+  const { password, ...otherUpdateData } = req.body; // Destructure password separately
   
   try {
-    if (firestore) {
-      const operatorDoc = await firestore.collection('operators').doc(id).get();
-      if (!operatorDoc.exists) {
-        return res.status(404).json({ error: "Operator not found" });
-      }
-      
-      const updateData = {
-        name: name || operatorDoc.data().name,
-        email: email || operatorDoc.data().email,
-        phone: phone || operatorDoc.data().phone,
-        assignedBins: assignedBins || operatorDoc.data().assignedBins,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await firestore.collection('operators').doc(id).update(updateData);
-      res.json({ message: "Operator updated successfully", operator: updateData });
-    } else {
-      if (!dummyOperators[id]) {
-        return res.status(404).json({ error: "Operator not found" });
-      }
-      
-      dummyOperators[id] = {
-        ...dummyOperators[id],
-        name: name || dummyOperators[id].name,
-        email: email || dummyOperators[id].email,
-        phone: phone || dummyOperators[id].phone,
-        assignedBins: assignedBins || dummyOperators[id].assignedBins,
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.json({ message: "Operator updated successfully", operator: dummyOperators[id] });
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+    
+    const operatorDoc = await firestore.collection('operators').doc(id).get();
+    if (!operatorDoc.exists) {
+      return res.status(404).json({ error: "Operator not found" });
+    }
+    
+    const updateData = { ...otherUpdateData }; // Start with other fields from req.body
+    
+    // Hash password if it's being updated
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+    
+    updateData.updatedAt = new Date().toISOString(); // Always update timestamp
+    
+    await firestore.collection('operators').doc(id).update(updateData);
+    
+    // Fetch updated document to return latest data without password
+    const updatedOperatorDoc = await firestore.collection('operators').doc(id).get();
+    const { password: _, ...updatedOperatorData } = updatedOperatorDoc.data();
+    
+    res.json({ message: "Operator updated successfully", operator: updatedOperatorData });
   } catch (error) {
     console.error("Error updating operator:", error);
     res.status(500).json({ error: "Failed to update operator" });
@@ -755,25 +824,143 @@ app.delete("/operators/:id", async (req, res) => {
   const id = req.params.id;
   
   try {
-    if (firestore) {
-      const operatorDoc = await firestore.collection('operators').doc(id).get();
-      if (!operatorDoc.exists) {
-        return res.status(404).json({ error: "Operator not found" });
-      }
-      
-      await firestore.collection('operators').doc(id).delete();
-      res.json({ message: "Operator deleted successfully" });
-    } else {
-      if (!dummyOperators[id]) {
-        return res.status(404).json({ error: "Operator not found" });
-      }
-      
-      delete dummyOperators[id];
-      res.json({ message: "Operator deleted successfully" });
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+    
+    const operatorDoc = await firestore.collection('operators').doc(id).get();
+    if (!operatorDoc.exists) {
+      return res.status(404).json({ error: "Operator not found" });
+    }
+
+    // Unassign bins in Realtime Database
+    if (db) {
+      const snapshot = await db.ref('bins').once('value');
+      const bins = snapshot.val() || {};
+      const updates = {};
+      Object.entries(bins).forEach(([binId, bin]) => {
+        if (bin.operatorId === id) {
+          updates[`bins/${binId}/operatorId`] = 'unassigned';
+        }
+      });
+      if (Object.keys(updates).length > 0) {
+        await db.ref().update(updates);
+      }
+    }
+
+    // Unassign bins in Firestore
+    const binsQuery = await firestore.collection('bins').where('operatorId', '==', id).get();
+    const batch = firestore.batch();
+    binsQuery.forEach(doc => {
+      batch.update(doc.ref, { operatorId: 'unassigned' });
+    });
+    await batch.commit();
+    
+    await firestore.collection('operators').doc(id).delete();
+    res.json({ message: "Operator deleted successfully" });
   } catch (error) {
     console.error("Error deleting operator:", error);
     res.status(500).json({ error: "Failed to delete operator" });
+  }
+});
+
+// Test endpoint to verify server is running updated code
+app.get("/test-timestamp", (req, res) => {
+  res.json({ 
+    timestamp: new Date().toISOString(),
+    message: "Server code updated - timestamp endpoint working",
+    version: "2025-11-25-22:32"
+  });
+});
+
+// Login endpoint (supports both admin and operator login)
+app.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  console.log(`[LOGIN] Attempt for email: ${email}`);
+
+  if (!email || !password) {
+    console.log('[LOGIN] Missing email or password');
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  try {
+    if (!firestore) {
+        console.log('[LOGIN] Firestore not initialized');
+        return res.status(503).json({ error: "Firestore not initialized" });
+    }
+
+    // First, check admins collection
+    const adminId = email.toLowerCase().replace(/[@.]/g, '_');
+    console.log(`[LOGIN] Checking admin with ID: ${adminId}`);
+    
+    const adminDoc = await firestore.collection('admins').doc(adminId).get();
+    console.log(`[LOGIN] Admin doc exists: ${adminDoc.exists}`);
+
+    if (adminDoc.exists) {
+      const adminData = adminDoc.data();
+      console.log(`[LOGIN] Admin data retrieved for: ${adminData.email}`);
+      
+      if (!adminData.password) {
+        console.log('[LOGIN] Admin has no password');
+        return res.status(401).json({ error: "Account setup incomplete" });
+      }
+
+      console.log('[LOGIN] Comparing passwords...');
+      const passwordMatch = await bcrypt.compare(password, adminData.password);
+      console.log(`[LOGIN] Password match: ${passwordMatch}`);
+
+      if (!passwordMatch) {
+        console.log('[LOGIN] Password mismatch - returning invalid credentials');
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // Return admin info (excluding password)
+      console.log('[LOGIN] Login successful - returning admin data');
+      const { password: _, ...adminProfile } = adminData;
+      return res.json({
+        ...adminProfile,
+        userId: adminDoc.id,
+        role: 'admin'
+      });
+    }
+
+    // If not admin, check operators collection
+    console.log('[LOGIN] Admin not found, checking operators...');
+    const operatorsRef = firestore.collection('operators');
+    const snapshot = await operatorsRef.where('email', '==', email).get();
+
+    if (snapshot.empty) {
+      console.log('[LOGIN] Operator not found either - invalid credentials');
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const userDoc = snapshot.docs[0];
+    const userData = userDoc.data();
+
+    // Verify password
+    if (!userData.password) {
+         return res.status(401).json({ error: "Account setup incomplete (no password set)" });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, userData.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Return operator info (excluding password)
+    const { password: _, ...userProfile } = userData;
+    res.json({
+        ...userProfile,
+        userId: userDoc.id,
+        operatorId: userDoc.id,
+        role: userProfile.role || 'operator' // Default to operator if role not set
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: "Login failed" });
   }
 });
 
@@ -818,74 +1005,48 @@ app.post("/operators/:operatorId/bins/:binId/clear", async (req, res) => {
     let updatedBinData = null;
 
     if (completed) {
-      if (binId === "bin1" && db) {
-        const binSnapshot = await db.ref("bins/bin1").once("value");
+      // Update technical data in Realtime Database
+      if (db) {
+        const binSnapshot = await db.ref(`bins/${binId}`).once("value");
         const currentData = binSnapshot.val() || {};
         const updates = {
           fillPct: 0,
           weightKg: 0,
           status: "Normal",
+          isBlocked: false,
           lastClearedAt: timestamp,
           lastClearedBy: operatorId
         };
-        await db.ref("bins/bin1").update(updates);
+        await db.ref(`bins/${binId}`).update(updates);
         updatedBinData = { ...currentData, ...updates };
-      } else if (firestore) {
-        const docRef = firestore.collection("bins").doc(binId);
-        const docSnapshot = await docRef.get();
-        if (!docSnapshot.exists) {
-          if (!dummyBins[binId]) {
-            return res.status(404).json({ error: "Bin not found" });
+      } else {
+        return res.status(503).json({ error: "Realtime Database not available" });
+      }
+
+      // Optionally add history entry to Firestore metadata
+      if (firestore) {
+        try {
+          const docRef = firestore.collection("bins").doc(binId);
+          const docSnapshot = await docRef.get();
+          if (docSnapshot.exists) {
+            await docRef.update({
+              lastClearedAt: timestamp,
+              lastClearedBy: operatorId,
+              updatedAt: timestamp
+            });
           }
-        } else {
-          const updates = {
-            status: "Normal",
-            fillPct: 0,
-            weightKg: 0,
-            lastClearedAt: timestamp,
-            lastClearedBy: operatorId
-          };
-          if (note) {
-            updates.lastClearedNote = note;
-          }
-          updates.history = admin.firestore.FieldValue.arrayUnion({
-            type: "clear",
-            operatorId,
-            timestamp,
-            note
-          });
-          await docRef.set(updates, { merge: true });
-          const refreshed = await docRef.get();
-          updatedBinData = refreshed.data();
+        } catch (err) {
+          console.log(`⚠️ Could not update Firestore metadata for ${binId}: ${err.message}`);
         }
       }
 
       if (!updatedBinData) {
-        if (!dummyBins[binId]) {
-          return res.status(404).json({ error: "Bin not found" });
-        }
-        dummyBins[binId] = {
-          ...dummyBins[binId],
-          status: "Normal",
-          fillPct: 0,
-          weightKg: 0,
-          lastClearedAt: timestamp,
-          lastClearedBy: operatorId
-        };
-        if (!dummyBins[binId].history) {
-          dummyBins[binId].history = [];
-        }
-        dummyBins[binId].history.push({
-          ts: timestamp,
-          type: "clear",
-          operatorId,
-          note
-        });
-        updatedBinData = dummyBins[binId];
+        return res.status(404).json({ error: "Bin not found" });
       }
-    } else if (dummyBins[binId]) {
-      updatedBinData = dummyBins[binId];
-    }
+    } else {
+        // Fallback to dummy data
+        // No dummy bins to fallback to
+      }
 
     const completedBins = toggleCompletedBin(operatorId, binId, completed, { note });
     res.json({
@@ -909,27 +1070,39 @@ app.post("/bins", async (req, res) => {
     return res.status(400).json({ error: "Bin ID is required" });
   }
   
-  const binData = {
-    weightKg: 0,
-    fillPct: 0,
-    status: status || "Active",
-    updatedAt: new Date().toISOString(),
-    name: name || id,
-    location: location || '',
-    capacity: capacity || 50,
-    operatorId: operatorId || '',
-    history: [],
-    createdAt: new Date().toISOString()
-  };
-  
   try {
-    if (firestore) {
-      await firestore.collection('bins').doc(id).set(binData);
-      res.json({ message: "Bin created successfully", bin: binData });
-    } else {
-      dummyBins[id] = binData;
-      res.json({ message: "Bin created successfully", bin: binData });
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+    
+    // Map operatorId from frontend to assignedTo in Firestore
+    const assignedTo = operatorId === 'unassigned' ? null : (operatorId || null);
+    
+    const binData = {
+      binId: id,
+      name: name || id.toUpperCase(),
+      location: location || 'Unknown Location',
+      capacity: capacity || 3,
+      assignedTo: assignedTo,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    
+    await firestore.collection('bins').doc(id).set(binData);
+    
+    // If operator assigned, add to operator's assignedBins array
+    if (assignedTo) {
+      const operatorDoc = await firestore.collection('operators').doc(assignedTo).get();
+      if (operatorDoc.exists) {
+        const operatorData = operatorDoc.data();
+        const updatedBins = [...new Set([...(operatorData.assignedBins || []), id])];
+        await firestore.collection('operators').doc(assignedTo).update({
+          assignedBins: updatedBins
+        });
+      }
+    }
+    
+    res.json({ message: "Bin created successfully", bin: { ...binData, binId: id } });
   } catch (error) {
     console.error("Error creating bin:", error);
     res.status(500).json({ error: "Failed to create bin" });
@@ -941,41 +1114,72 @@ app.put("/bins/:id", async (req, res) => {
   const id = req.params.id;
   const { name, location, capacity, operatorId, status } = req.body;
   
+  console.log(`📝 Updating bin ${id}:`, { name, location, capacity, operatorId });
+  
   try {
-    if (firestore) {
-      const binDoc = await firestore.collection('bins').doc(id).get();
-      if (!binDoc.exists) {
-        return res.status(404).json({ error: "Bin not found" });
-      }
-      
-      const updateData = {
-        name: name || binDoc.data().name,
-        location: location || binDoc.data().location,
-        capacity: capacity || binDoc.data().capacity,
-        operatorId: operatorId || binDoc.data().operatorId,
-        status: status || binDoc.data().status,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await firestore.collection('bins').doc(id).update(updateData);
-      res.json({ message: "Bin updated successfully", bin: updateData });
-    } else {
-      if (!dummyBins[id]) {
-        return res.status(404).json({ error: "Bin not found" });
-      }
-      
-      dummyBins[id] = {
-        ...dummyBins[id],
-        name: name || dummyBins[id].name,
-        location: location || dummyBins[id].location,
-        capacity: capacity || dummyBins[id].capacity,
-        operatorId: operatorId || dummyBins[id].operatorId,
-        status: status || dummyBins[id].status,
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.json({ message: "Bin updated successfully", bin: dummyBins[id] });
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+
+    // Check if bin exists in Firestore
+    const binDoc = await firestore.collection('bins').doc(id).get();
+    if (!binDoc.exists) {
+      return res.status(404).json({ error: "Bin not found" });
+    }
+
+    const currentData = binDoc.data();
+    
+    // Map operatorId from frontend to assignedTo in Firestore
+    let assignedTo = currentData.assignedTo;
+    if (operatorId !== undefined) {
+      assignedTo = operatorId === 'unassigned' ? null : operatorId;
+      console.log(`  Operator change: ${currentData.assignedTo || 'null'} → ${assignedTo || 'null'}`);
+    }
+    
+    const updateData = {
+      name: name || currentData.name,
+      location: location || currentData.location,
+      capacity: capacity || currentData.capacity,
+      assignedTo: assignedTo,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Update Firestore (metadata)
+    await firestore.collection('bins').doc(id).update(updateData);
+    
+    // If operator changed, update operator's assignedBins array
+    if (operatorId !== undefined && operatorId !== currentData.assignedTo) {
+      // Remove from old operator
+      if (currentData.assignedTo) {
+        const oldOperatorDoc = await firestore.collection('operators').doc(currentData.assignedTo).get();
+        if (oldOperatorDoc.exists) {
+          const oldOperatorData = oldOperatorDoc.data();
+          const updatedBins = (oldOperatorData.assignedBins || []).filter(b => b !== id);
+          await firestore.collection('operators').doc(currentData.assignedTo).update({
+            assignedBins: updatedBins
+          });
+          console.log(`✅ Removed ${id} from operator ${currentData.assignedTo}`);
+        }
+      }
+      
+      // Add to new operator (only if not unassigning)
+      if (operatorId !== 'unassigned') {
+        const newOperatorDoc = await firestore.collection('operators').doc(operatorId).get();
+        if (newOperatorDoc.exists) {
+          const newOperatorData = newOperatorDoc.data();
+          const updatedBins = [...new Set([...(newOperatorData.assignedBins || []), id])];
+          await firestore.collection('operators').doc(operatorId).update({
+            assignedBins: updatedBins
+          });
+          console.log(`✅ Added ${id} to operator ${operatorId}`);
+        }
+      } else {
+        console.log(`✅ Unassigned ${id} (no new operator)`);
+      }
+    }
+    
+    res.json({ message: "Bin updated successfully", bin: { ...updateData, binId: id } });
+
   } catch (error) {
     console.error("Error updating bin:", error);
     res.status(500).json({ error: "Failed to update bin" });
@@ -987,22 +1191,19 @@ app.delete("/bins/:id", async (req, res) => {
   const id = req.params.id;
   
   try {
-    if (firestore) {
-      const binDoc = await firestore.collection('bins').doc(id).get();
-      if (!binDoc.exists) {
-        return res.status(404).json({ error: "Bin not found" });
-      }
-      
-      await firestore.collection('bins').doc(id).delete();
-      res.json({ message: "Bin deleted successfully" });
-    } else {
-      if (!dummyBins[id]) {
-        return res.status(404).json({ error: "Bin not found" });
-      }
-      
-      delete dummyBins[id];
-      res.json({ message: "Bin deleted successfully" });
+    if (!firestore) {
+      return res.status(503).json({ error: "Firestore not initialized" });
     }
+
+    // Check if bin exists in Firestore
+    const binDoc = await firestore.collection('bins').doc(id).get();
+    if (!binDoc.exists) {
+      return res.status(404).json({ error: "Bin not found" });
+    }
+
+    // Delete only from Firestore (keep Realtime DB for historical data)
+    await firestore.collection('bins').doc(id).delete();
+    res.json({ message: "Bin deleted successfully" });
   } catch (error) {
     console.error("Error deleting bin:", error);
     res.status(500).json({ error: "Failed to delete bin" });
@@ -1047,7 +1248,10 @@ app.post("/test-alert/:binId", async (req, res) => {
 });
 
 // ================= Chatbot Endpoints =================
-const chatbot = require('./chatbot/gemini');
+const SmartBinChatbot = require('./chatbot/mistral');
+const chatbot = new SmartBinChatbot({
+  getAllBins: async () => cachedBins
+});
 
 // POST /chatbot/message - Send message to chatbot
 app.post('/chatbot/message', async (req, res) => {
@@ -1058,23 +1262,75 @@ app.post('/chatbot/message', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Use a default userId if not provided
-    const userIdentifier = userId || 'anonymous';
 
-    // Gather context for chatbot
-    const context = {
-      bins: cachedBins,
-      operators: cachedOperators,
-      weather: cachedWeather
-    };
+    // Fetch current bins data using the same logic as /bins endpoint
+    let bins = {};
+    let firestoreBins = {};
+    let realtimeBins = {};
+    
+    // Step 1: Get metadata from Firestore bins collection
+    if (firestore) {
+      try {
+        const binsSnapshot = await firestore.collection('bins').get();
+        binsSnapshot.forEach(doc => {
+          firestoreBins[doc.id] = doc.data();
+        });
+        console.log(`✅ Chatbot: Retrieved ${Object.keys(firestoreBins).length} bins from Firestore`);
+      } catch (error) {
+        console.log(`⚠️ Chatbot: Error fetching bins from Firestore: ${error.message}`);
+      }
+    }
+    
+    // Step 2: Get technical data from Realtime Database
+    if (db) {
+      try {
+        const snapshot = await db.ref("bins").once("value");
+        realtimeBins = snapshot.val() || {};
+        console.log(`✅ Chatbot: Retrieved ${Object.keys(realtimeBins).length} bins from Realtime Database`);
+      } catch (error) {
+        console.log(`⚠️ Chatbot: Error fetching bins from Realtime Database: ${error.message}`);
+      }
+    }
+    
+    // Step 3: Merge bins from both sources (same logic as /bins endpoint)
+    const allBinIds = new Set([
+      ...Object.keys(firestoreBins),
+      ...Object.keys(realtimeBins)
+    ]);
+    
+    allBinIds.forEach(binId => {
+      const metadata = firestoreBins[binId] || {};
+      const technicalData = realtimeBins[binId] || {};
+      
+      bins[binId] = {
+        // Metadata from Firestore
+        binId: metadata.binId || binId,
+        name: metadata.name || technicalData.name || binId.toUpperCase(),
+        location: metadata.location || technicalData.location || 'Unknown',
+        capacity: metadata.capacity || technicalData.capacity || 3,
+        assignedTo: metadata.assignedTo || null,
+        
+        // Technical data from Realtime DB (real-time sensor readings)
+        weightKg: technicalData.weightKg || 0,
+        fillPct: technicalData.fillPct || 0,
+        status: technicalData.status || 'Normal',
+        isBlocked: technicalData.isBlocked || false,
+        updatedAt: technicalData.updatedAt || new Date().toISOString(),
+        
+        lastFetched: new Date().toISOString()
+      };
+    });
+
+    // Update cached bins for chatbot to use
+    cachedBins = bins;
+
 
     // Get response from chatbot
-    const result = await chatbot.chat(userIdentifier, message, context);
+    const response = await chatbot.chat(message);
 
     res.json({
-      response: result.response,
-      timestamp: result.timestamp,
-      userId: userIdentifier
+      response: response,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
@@ -1155,6 +1411,36 @@ app.post('/chatbot/report', async (req, res) => {
     const message = `Report issue with ${binId}: ${issue}. ${description || ''}`;
     const context = { bins: cachedBins };
     const chatResponse = await chatbot.chat(userId || 'anonymous', message, context);
+
+    // Send email notification to Charagh
+    const reportEmail = {
+      from: 'm.charaghyousafkhan@gmail.com',
+      to: 'm.charaghyousafkhan@gmail.com',
+      subject: `🚨 Bin Issue Report: ${binId.toUpperCase()} - ${issue}`,
+      text: `A new issue has been reported:\n\nTicket ID: ${ticket.id}\nReported by: ${userId || 'Anonymous'}\nBin ID: ${binId.toUpperCase()}\nIssue: ${issue}\nDescription: ${description || 'No additional details provided'}\nTimestamp: ${ticket.createdAt}\n\nPlease address this issue as soon as possible.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #dc2626;">🚨 New Bin Issue Report</h2>
+          <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Ticket ID:</strong> ${ticket.id}</p>
+            <p><strong>Reported by:</strong> ${userId || 'Anonymous'}</p>
+            <p><strong>Bin ID:</strong> ${binId.toUpperCase()}</p>
+            <p><strong>Issue:</strong> ${issue}</p>
+            <p><strong>Description:</strong> ${description || 'No additional details provided'}</p>
+            <p><strong>Timestamp:</strong> ${new Date(ticket.createdAt).toLocaleString()}</p>
+          </div>
+          <p style="color: #6b7280;">Please address this issue as soon as possible.</p>
+        </div>
+      `
+    };
+
+    transporter.sendMail(reportEmail, (error, info) => {
+      if (error) {
+        console.error('Error sending issue report email:', error);
+      } else {
+        console.log(`📧 Issue report email sent: ${info.response}`);
+      }
+    });
 
     res.json({
       ticket,
